@@ -1,8 +1,7 @@
-from flask import Flask, request, Response, render_template_string, redirect, url_for
+from flask import Flask, request, Response, render_template_string
 
 app = Flask(__name__)
 
-# Store last dialed number in-memory (reset on restart)
 last_number = None
 
 HTML_PAGE = """
@@ -18,7 +17,6 @@ HTML_PAGE = """
                 alert('Please enter the phone number in E.164 format starting with +');
                 return;
             }
-            // Send number to /set endpoint and then open /voice in new tab
             fetch('/set?To=' + encodeURIComponent(num))
                 .then(() => {
                     window.open('/voice', '_blank');
@@ -56,15 +54,16 @@ def set_number():
 def voice():
     global last_number
     if not last_number:
-        twiml = """<?xml version="1.0" encoding="UTF-8"?>
-<Response></Response>"""
+        twiml = """<?xml version="1.0" encoding="UTF-8"?><Response></Response>"""
     else:
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Dial>{last_number}</Dial>
 </Response>"""
-
     return Response(twiml, mimetype='text/xml')
 
+# 👇 Required for Render to work
+import os
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
