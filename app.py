@@ -3,7 +3,7 @@ from twilio.twiml.voice_response import VoiceResponse, Dial
 
 app = Flask(__name__)
 
-# Simple HTML page template
+# Simple HTML page template with target="_blank" in the form
 HTML_FORM = """
 <!DOCTYPE html>
 <html>
@@ -12,7 +12,7 @@ HTML_FORM = """
 </head>
 <body>
   <h1>Call Dialer</h1>
-  <form method="get" action="/voice">
+  <form method="get" action="/voice" target="_blank">
     <label for="To">Phone Number to Call:</label>
     <input type="tel" id="To" name="To" placeholder="+1234567890" required>
     <button type="submit">Call</button>
@@ -38,3 +38,6 @@ def voice():
     dial.number(number_to_dial)
     response.append(dial)
     return Response(str(response), mimetype="text/xml")
+
+if __name__ == "__main__":
+    app.run(debug=True)
