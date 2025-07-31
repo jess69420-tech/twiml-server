@@ -3,7 +3,9 @@ from twilio.twiml.voice_response import VoiceResponse, Dial
 
 app = Flask(__name__)
 
-# Simple HTML page template with target="_blank" in the form
+# Store last number globally (in memory)
+last_number_to_dial = None
+
 HTML_FORM = """
 <!DOCTYPE html>
 <html>
@@ -12,12 +14,12 @@ HTML_FORM = """
 </head>
 <body>
   <h1>Call Dialer</h1>
-  <form method="get" action="/voice" target="_blank">
+  <form method="get" action="/voice">
     <label for="To">Phone Number to Call:</label>
     <input type="tel" id="To" name="To" placeholder="+1234567890" required>
-    <button type="submit">Call</button>
+    <button type="submit">Set Number</button>
   </form>
-  <p>Enter the phone number you want to call and hit "Call". Then dial your Twilio number in MicroSIP.</p>
+  <p>Enter the phone number you want to call and hit "Set Number". Then dial your Twilio number in MicroSIP.</p>
 </body>
 </html>
 """
@@ -28,16 +30,27 @@ def home():
 
 @app.route("/voice", methods=["GET", "POST"])
 def voice():
+    global last_number_to_dial
+
     number_to_dial = request.values.get("To")
-    if not number_to_dial:
-        # If no number provided, redirect back to home form
-        return redirect(url_for('home'))
 
-    response = VoiceResponse()
-    dial = Dial()
-    dial.number(number_to_dial)
-    response.append(dial)
-    return Response(str(response), mimetype="text/xml")
+    if number_to_dial:
+        # Update last_number_to_dial when URL param provided
+        last_number_to_dial = number_to_dial
+        # If accessed from browser, show XML
+        response = VoiceResponse()
+        dial = Dial()
+        dial.number(number_to_dial)
+        response.append(dial)
+        return Response(str(response), mimetype="text/xml")
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    # If no To param, use last saved number
+    if last_number_to_dial:
+        response = VoiceResponse()
+        dial = Dial()
+        dial.number(last_number_to_dial)
+        response.append(dial)
+        return Response(str(response), mimetype="text/xml")
+
+    # No number set yet, redirect to form
+    return redirect(url_for('home'))
